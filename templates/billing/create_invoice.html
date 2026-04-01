@@ -1,0 +1,692 @@
+{% extends "base.html" %}
+
+{% block title %}Create Invoice | Billing Software{% endblock %}
+
+{% block extra_css %}
+<style>
+    .invoice-shell {
+        max-width: 1260px;
+        margin: 0 auto;
+        padding: 30px 24px 48px;
+    }
+
+    .invoice-layout {
+        display: grid;
+        grid-template-columns: 1.4fr 0.9fr;
+        gap: 18px;
+        align-items: start;
+    }
+
+    .panel {
+        background: #ffffff;
+        border: 1px solid #dbe7ef;
+        border-radius: 16px;
+        box-shadow: 0 14px 36px rgba(15, 118, 110, 0.08);
+        padding: 20px;
+    }
+
+    .panel h2 {
+        margin: 0 0 14px;
+        font-size: 36px;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+    }
+
+    .subheading {
+        margin: 0 0 18px;
+        color: #64748b;
+        font-size: 16px;
+    }
+
+    .field-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+
+    .items-wrap {
+        border: 1px solid #dbe7ef;
+        border-radius: 14px;
+        overflow: hidden;
+        background: #ffffff;
+    }
+
+    .items-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 1030px;
+    }
+
+    .items-table th,
+    .items-table td {
+        border-bottom: 1px solid #e2e8f0;
+        padding: 10px;
+        vertical-align: middle;
+    }
+
+    .items-table th {
+        background: #f8fafc;
+        color: #334e68;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
+    .items-table input,
+    .items-table select {
+        width: 100%;
+        min-width: 100%;
+        padding: 10px 10px;
+    }
+
+    .items-table .readonly-cell {
+        display: block;
+        width: 100%;
+        border-radius: 10px;
+        background: #f1f5f9;
+        padding: 10px 10px;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .remove-btn {
+        border: 1px solid #fda4af;
+        color: #be123c;
+        background: #fff1f2;
+        border-radius: 10px;
+        padding: 8px 10px;
+        cursor: pointer;
+        width: 100%;
+    }
+
+    .remove-btn:hover {
+        background: #ffe4e6;
+    }
+
+    .summary-title {
+        margin: 0 0 12px;
+        font-size: 22px;
+    }
+
+    .summary-grid {
+        display: grid;
+        gap: 10px;
+        margin-bottom: 14px;
+    }
+
+    .summary-line {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 10px 12px;
+    }
+
+    .summary-line strong {
+        font-size: 28px;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .summary-line.total {
+        background: #0f766e;
+        color: #ffffff;
+        border-color: #0f766e;
+    }
+
+    .summary-line.total strong {
+        color: #ffffff;
+    }
+
+    .generate-btn {
+        width: 100%;
+        padding: 13px 14px;
+        font-size: 19px;
+        font-weight: 700;
+    }
+
+    .alert-box {
+        border-radius: 12px;
+        padding: 12px 14px;
+        margin-bottom: 14px;
+        display: none;
+        white-space: pre-line;
+    }
+
+    .alert-box.error {
+        display: block;
+        color: #991b1b;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+    }
+
+    .alert-box.success {
+        display: block;
+        color: #166534;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+    }
+
+    @media (max-width: 1000px) {
+        .invoice-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 720px) {
+        .field-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="invoice-shell">
+    <div class="top-nav">
+        <div>
+            <h1 style="margin-bottom: 6px;">Create Invoice</h1>
+            <p class="muted" style="margin: 0;">Generate GST invoice with fast keyboard-based entry for {{ request.user.shop_name }}</p>
+        </div>
+        <div class="actions">
+            <a class="button-link button-secondary" href="{% url 'accounts:dashboard' %}">Dashboard</a>
+            <a class="button-link button-secondary" href="{% url 'products:list' %}">Products</a>
+            <a class="button-link button-secondary" href="{% url 'reports:dashboard' %}">Reports</a>
+        </div>
+    </div>
+
+    <div id="form-alert" class="alert-box"></div>
+
+    <div class="invoice-layout">
+        <section class="panel">
+            <h2>Invoice Details</h2>
+            <p class="subheading">Fill details and generate invoice quickly.</p>
+
+            <form id="invoice-form">
+                {% csrf_token %}
+                <div class="field-grid">
+                    <div>
+                        <label for="customer_name">Customer Name</label>
+                        <input id="customer_name" name="customer_name" type="text" placeholder="Enter customer name" required>
+                    </div>
+                    <div>
+                        <label for="customer_mobile">Customer Mobile</label>
+                        <input id="customer_mobile" name="customer_mobile" type="text" placeholder="Enter mobile number" required>
+                    </div>
+                    <div>
+                        <label for="invoice_date">Date</label>
+                        <input id="invoice_date" name="date" type="date" value="{{ today }}" required>
+                    </div>
+                    <div>
+                        <label for="payment_mode">Payment Mode</label>
+                        <select id="payment_mode" name="payment_mode">
+                            {% for value, label in payment_modes %}
+                                <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="items-wrap">
+                    <table class="items-table">
+                        <thead>
+                            <tr>
+                                <th>Product Search</th>
+                                <th>Product</th>
+                                <th>Qty</th>
+                                <th>Rate</th>
+                                <th>Discount</th>
+                                <th>GST %</th>
+                                <th>Taxable</th>
+                                <th>GST</th>
+                                <th>Total</th>
+                                <th>Remove</th>
+                            </tr>
+                        </thead>
+                        <tbody id="item-rows"></tbody>
+                    </table>
+                </div>
+            </form>
+        </section>
+
+        <aside class="panel">
+            <h2 class="summary-title">Bill Summary</h2>
+            <div class="summary-grid">
+                <div class="summary-line">
+                    <span>Subtotal</span>
+                    <strong id="subtotal">0.00</strong>
+                </div>
+                <div class="summary-line">
+                    <span>Total GST</span>
+                    <strong id="gst-total">0.00</strong>
+                </div>
+                <div class="summary-line">
+                    <span>CGST</span>
+                    <strong id="cgst-total">0.00</strong>
+                </div>
+                <div class="summary-line">
+                    <span>SGST</span>
+                    <strong id="sgst-total">0.00</strong>
+                </div>
+                <div class="summary-line total">
+                    <span>Final Amount</span>
+                    <strong id="grand-total">0.00</strong>
+                </div>
+            </div>
+            <button type="button" id="generate-invoice-btn" class="generate-btn">Generate Invoice</button>
+        </aside>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const PRODUCT_API_URL = "{% url 'billing:product-list' %}";
+    const INVOICE_API_URL = "{% url 'billing:invoice-list-create' %}";
+    const INVOICE_PREVIEW_URL_TEMPLATE = "{% url 'billing:invoice-preview' 0 %}";
+
+    const itemRows = document.getElementById("item-rows");
+    const generateBtn = document.getElementById("generate-invoice-btn");
+    const alertBox = document.getElementById("form-alert");
+    const invoiceForm = document.getElementById("invoice-form");
+    const csrfToken = document.querySelector("input[name='csrfmiddlewaretoken']").value;
+    const QTY_STEP = 1;
+
+    let products = [];
+
+    function parseNumber(value) {
+        const number = parseFloat(value);
+        return Number.isFinite(number) ? number : 0;
+    }
+
+    function money(value) {
+        return parseNumber(value).toFixed(2);
+    }
+
+    function parseQuantity(value) {
+        const number = parseInt(value, 10);
+        return Number.isFinite(number) ? number : 0;
+    }
+
+    function normalizeQtyValue(value) {
+        const current = parseQuantity(value);
+        if (current <= 0) {
+            return String(QTY_STEP);
+        }
+        return String(current);
+    }
+
+    function incrementQtyInput(qtyInput, direction) {
+        const current = parseQuantity(qtyInput.value);
+        const baseValue = current > 0 ? current : QTY_STEP;
+        const next = Math.max(QTY_STEP, baseValue + (direction * QTY_STEP));
+        qtyInput.value = String(next);
+    }
+
+    function clearAlert() {
+        alertBox.className = "alert-box";
+        alertBox.textContent = "";
+    }
+
+    function showAlert(message, type = "error") {
+        alertBox.className = `alert-box ${type}`;
+        alertBox.textContent = message;
+    }
+
+    async function loadProducts() {
+        const response = await fetch(PRODUCT_API_URL, {
+            method: "GET",
+            headers: { "Accept": "application/json" },
+            credentials: "same-origin",
+        });
+
+        if (!response.ok) {
+            throw new Error("Unable to load products.");
+        }
+
+        products = await response.json();
+        if (!Array.isArray(products)) {
+            products = [];
+        }
+    }
+
+    function buildOptionLabel(product) {
+        return `${product.name} (${product.hsn_code})`;
+    }
+
+    function filterOptions(selectElement, searchText, selectedValue = "") {
+        const query = searchText.trim().toLowerCase();
+        const filtered = products.filter((product) => {
+            if (!query) {
+                return true;
+            }
+            return (
+                product.name.toLowerCase().includes(query) ||
+                product.hsn_code.toLowerCase().includes(query)
+            );
+        });
+
+        selectElement.innerHTML = '<option value="">Select Product</option>';
+        filtered.forEach((product) => {
+            const option = document.createElement("option");
+            option.value = String(product.id);
+            option.textContent = buildOptionLabel(product);
+            if (selectedValue && String(product.id) === String(selectedValue)) {
+                option.selected = true;
+            }
+            selectElement.appendChild(option);
+        });
+    }
+
+    function calculateRow(row) {
+        const qty = parseQuantity(row.querySelector(".qty-input").value);
+        const rate = parseNumber(row.querySelector(".rate-input").value);
+        const discount = parseNumber(row.querySelector(".discount-input").value);
+        const gst = parseNumber(row.querySelector(".gst-input").value);
+
+        const lineBase = qty * rate;
+        const taxableAmount = Math.max(0, lineBase - discount);
+        const gstAmount = taxableAmount * (gst / 100);
+        const finalAmount = taxableAmount + gstAmount;
+
+        row.querySelector(".taxable-display").textContent = money(taxableAmount);
+        row.querySelector(".gst-display").textContent = money(gstAmount);
+        row.querySelector(".line-total-display").textContent = money(finalAmount);
+
+        row.dataset.taxable = String(taxableAmount);
+        row.dataset.gstAmount = String(gstAmount);
+        row.dataset.finalAmount = String(finalAmount);
+    }
+
+    function calculateTotals() {
+        const rows = itemRows.querySelectorAll("tr");
+        let subtotal = 0;
+        let totalGst = 0;
+        let grandTotal = 0;
+
+        rows.forEach((row) => {
+            calculateRow(row);
+            subtotal += parseNumber(row.dataset.taxable);
+            totalGst += parseNumber(row.dataset.gstAmount);
+            grandTotal += parseNumber(row.dataset.finalAmount);
+        });
+
+        document.getElementById("subtotal").textContent = money(subtotal);
+        document.getElementById("gst-total").textContent = money(totalGst);
+        document.getElementById("cgst-total").textContent = money(totalGst / 2);
+        document.getElementById("sgst-total").textContent = money(totalGst / 2);
+        document.getElementById("grand-total").textContent = money(grandTotal);
+    }
+
+    function createRow(initialData = {}) {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td><input type="text" class="product-search-input" placeholder="Search product / HSN"></td>
+            <td><select class="product-select"></select></td>
+            <td><input type="number" class="qty-input" min="1" step="1" value="${initialData.quantity || "1"}"></td>
+            <td><input type="number" class="rate-input" min="0.00" step="0.01" value="${initialData.rate || "0.00"}"></td>
+            <td><input type="number" class="discount-input" min="0.00" step="0.01" value="${initialData.discount || "0.00"}"></td>
+            <td><input type="number" class="gst-input" min="0.00" step="0.01" value="${initialData.gst || "0.00"}"></td>
+            <td><span class="readonly-cell taxable-display">0.00</span></td>
+            <td><span class="readonly-cell gst-display">0.00</span></td>
+            <td><span class="readonly-cell line-total-display">0.00</span></td>
+            <td><button type="button" class="remove-btn remove-row-btn">Remove</button></td>
+        `;
+
+        const searchInput = row.querySelector(".product-search-input");
+        const productSelect = row.querySelector(".product-select");
+        const qtyInput = row.querySelector(".qty-input");
+        const rateInput = row.querySelector(".rate-input");
+        const discountInput = row.querySelector(".discount-input");
+        const gstInput = row.querySelector(".gst-input");
+        const removeBtn = row.querySelector(".remove-row-btn");
+
+        filterOptions(productSelect, "", initialData.product || "");
+
+        searchInput.addEventListener("input", () => {
+            filterOptions(productSelect, searchInput.value, productSelect.value);
+        });
+
+        productSelect.addEventListener("change", () => {
+            const selectedProduct = products.find((product) => String(product.id) === productSelect.value);
+            if (selectedProduct) {
+                rateInput.value = money(selectedProduct.price);
+                gstInput.value = money(selectedProduct.gst_percentage);
+                searchInput.value = buildOptionLabel(selectedProduct);
+            }
+            calculateTotals();
+        });
+
+        [qtyInput, rateInput, discountInput, gstInput].forEach((inputElement) => {
+            inputElement.addEventListener("input", calculateTotals);
+        });
+
+        qtyInput.addEventListener("keydown", (event) => {
+            if (event.key === "ArrowUp") {
+                event.preventDefault();
+                incrementQtyInput(qtyInput, 1);
+                calculateTotals();
+            } else if (event.key === "ArrowDown") {
+                event.preventDefault();
+                incrementQtyInput(qtyInput, -1);
+                calculateTotals();
+            }
+        });
+
+        qtyInput.addEventListener("blur", () => {
+            qtyInput.value = normalizeQtyValue(qtyInput.value);
+            calculateTotals();
+        });
+
+        removeBtn.addEventListener("click", () => {
+            row.remove();
+            if (!itemRows.querySelector("tr")) {
+                const nextRow = addRow();
+                nextRow.querySelector(".product-search-input").focus();
+            }
+            calculateTotals();
+        });
+
+        if (initialData.product) {
+            productSelect.value = String(initialData.product);
+            const selectedProduct = products.find((product) => String(product.id) === String(initialData.product));
+            if (selectedProduct) {
+                searchInput.value = buildOptionLabel(selectedProduct);
+            }
+        }
+
+        itemRows.appendChild(row);
+        qtyInput.value = normalizeQtyValue(qtyInput.value);
+        calculateTotals();
+        return row;
+    }
+
+    function addRow(initialData = {}) {
+        return createRow(initialData);
+    }
+
+    function getInputFlow() {
+        const flow = [
+            document.getElementById("customer_name"),
+            document.getElementById("customer_mobile"),
+            document.getElementById("invoice_date"),
+            document.getElementById("payment_mode"),
+        ];
+
+        itemRows.querySelectorAll("tr").forEach((row) => {
+            flow.push(row.querySelector(".product-search-input"));
+            flow.push(row.querySelector(".product-select"));
+            flow.push(row.querySelector(".qty-input"));
+            flow.push(row.querySelector(".rate-input"));
+            flow.push(row.querySelector(".discount-input"));
+            flow.push(row.querySelector(".gst-input"));
+        });
+
+        flow.push(generateBtn);
+        return flow.filter(Boolean);
+    }
+
+    function handleEnterNavigation(event) {
+        if (event.key !== "Enter") {
+            return;
+        }
+
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) {
+            return;
+        }
+
+        if (!target.matches("input, select, button")) {
+            return;
+        }
+
+        event.preventDefault();
+
+        if (target.classList.contains("gst-input")) {
+            const row = target.closest("tr");
+            const allRows = Array.from(itemRows.querySelectorAll("tr"));
+            const isLastRow = allRows.length && row === allRows[allRows.length - 1];
+
+            if (isLastRow) {
+                const nextRow = addRow();
+                nextRow.querySelector(".product-search-input").focus();
+                return;
+            }
+        }
+
+        const flow = getInputFlow();
+        const currentIndex = flow.indexOf(target);
+        if (currentIndex >= 0 && currentIndex < flow.length - 1) {
+            const nextField = flow[currentIndex + 1];
+            nextField.focus();
+            if (nextField.select) {
+                nextField.select();
+            }
+        }
+    }
+
+    function collectPayload() {
+        const customerName = document.getElementById("customer_name").value.trim();
+        const customerMobile = document.getElementById("customer_mobile").value.trim();
+        const date = document.getElementById("invoice_date").value;
+        const paymentMode = document.getElementById("payment_mode").value;
+        const rows = Array.from(itemRows.querySelectorAll("tr"));
+
+        if (!customerName) {
+            throw new Error("Customer name is required.");
+        }
+        if (!customerMobile) {
+            throw new Error("Customer mobile is required.");
+        }
+
+        const items = [];
+
+        rows.forEach((row) => {
+            const productId = row.querySelector(".product-select").value;
+            const qty = parseQuantity(row.querySelector(".qty-input").value);
+            const rate = parseNumber(row.querySelector(".rate-input").value);
+            const discount = parseNumber(row.querySelector(".discount-input").value);
+            const gst = parseNumber(row.querySelector(".gst-input").value);
+            const rowHasAnyValue = Boolean(productId) || qty > 0 || rate > 0 || discount > 0 || gst > 0;
+
+            if (!rowHasAnyValue) {
+                return;
+            }
+
+            if (!productId) {
+                throw new Error("Please select product in all filled rows.");
+            }
+            if (qty <= 0) {
+                throw new Error("Quantity must be greater than 0.");
+            }
+            if (discount > (qty * rate)) {
+                throw new Error("Discount cannot exceed Qty x Rate.");
+            }
+
+            items.push(
+                {
+                    product: Number(productId),
+                    quantity: String(qty),
+                    rate: money(rate),
+                    discount: money(discount),
+                    gst: money(gst),
+                }
+            );
+        });
+
+        if (!items.length) {
+            throw new Error("Add at least one product row.");
+        }
+
+        return {
+            customer_name: customerName,
+            customer_mobile: customerMobile,
+            payment_mode: paymentMode,
+            date,
+            items,
+        };
+    }
+
+    async function submitInvoice() {
+        clearAlert();
+        let payload;
+        try {
+            payload = collectPayload();
+        } catch (error) {
+            showAlert(error.message, "error");
+            return;
+        }
+
+        generateBtn.disabled = true;
+        generateBtn.textContent = "Generating...";
+
+        try {
+            const response = await fetch(INVOICE_API_URL, {
+                method: "POST",
+                credentials: "same-origin",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "X-CSRFToken": csrfToken,
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const responseData = await response.json();
+            if (!response.ok) {
+                const message = typeof responseData === "object"
+                    ? JSON.stringify(responseData)
+                    : "Unable to generate invoice.";
+                throw new Error(message);
+            }
+
+            showAlert("Invoice generated. Opening preview...", "success");
+            window.location.href = INVOICE_PREVIEW_URL_TEMPLATE.replace("/0/preview/", `/${responseData.id}/preview/`);
+        } catch (error) {
+            showAlert(error.message, "error");
+            generateBtn.disabled = false;
+            generateBtn.textContent = "Generate Invoice";
+        }
+    }
+
+    invoiceForm.addEventListener("keydown", handleEnterNavigation);
+    generateBtn.addEventListener("click", submitInvoice);
+
+    (async function initialize() {
+        try {
+            await loadProducts();
+            if (!products.length) {
+                showAlert("No products found. Please add products first.", "error");
+            }
+            const firstRow = addRow();
+            firstRow.querySelector(".product-search-input").focus();
+        } catch (error) {
+            showAlert(error.message, "error");
+        }
+    })();
+</script>
+{% endblock %}

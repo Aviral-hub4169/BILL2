@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | Billing Software{% endblock %}
+
+{% block content %}
+<div style="max-width: 960px; margin: 0 auto; padding: 32px 24px 48px;">
+    <div class="top-nav">
+        <div>
+            <h1 style="margin-bottom: 6px;">Dashboard</h1>
+            <p class="muted" style="margin: 0;">Welcome back, {{ request.user.owner_name }}</p>
+        </div>
+        <a class="button-link" href="{% url 'accounts:logout' %}">Logout</a>
+    </div>
+
+    <div class="dashboard-card">
+        <h2 style="margin-top: 0;">Business Profile</h2>
+        <p><strong>Shop Name:</strong> {{ request.user.shop_name }}</p>
+        <p><strong>Owner Name:</strong> {{ request.user.owner_name }}</p>
+        <p><strong>Email:</strong> {{ request.user.email }}</p>
+        <p><strong>Mobile:</strong> {{ request.user.mobile }}</p>
+        <p><strong>Address:</strong> {{ request.user.address }}</p>
+        <p><strong>GST Number:</strong> {{ request.user.gst_number|default:"Not provided" }}</p>
+    </div>
+
+    <div class="dashboard-card">
+        <h2 style="margin-top: 0;">Quick Access</h2>
+        <p>This is the post-login landing page. Billing, inventory, invoices, and reports modules can be added here next.</p>
+        <div class="actions" style="margin-top: 16px;">
+            <a class="button-link" href="{% url 'products:list' %}">Manage Products</a>
+            <a class="button-link button-secondary" href="{% url 'products:add' %}">Add Product</a>
+            <a class="button-link" href="{% url 'billing:create' %}">Create Invoice</a>
+            <a class="button-link button-secondary" href="{% url 'reports:dashboard' %}">Reports</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

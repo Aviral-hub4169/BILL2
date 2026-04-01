@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block title %}Invoice {{ invoice.invoice_number }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .preview-shell {
+        max-width: 1020px;
+        margin: 26px auto 44px;
+        padding: 0 20px;
+    }
+
+    .preview-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 14px;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .preview-toolbar .actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .bill-wrapper {
+        border: 2px solid #1e293b;
+        background: #ffffff;
+        padding: 14px;
+    }
+
+    .bill-header {
+        border: 1px solid #1e293b;
+        padding: 12px;
+        margin-bottom: 10px;
+    }
+
+    .shop-line {
+        font-size: 23px;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        margin: 0 0 6px;
+        text-transform: uppercase;
+    }
+
+    .shop-meta {
+        margin: 2px 0;
+        font-size: 13px;
+    }
+
+    .invoice-meta {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 10px;
+    }
+
+    .invoice-meta td {
+        border: 1px solid #1e293b;
+        padding: 7px 8px;
+        font-size: 13px;
+    }
+
+    .invoice-meta .label {
+        font-weight: 700;
+        width: 16%;
+        background: #f8fafc;
+    }
+
+    .bill-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .bill-table th,
+    .bill-table td {
+        border: 1px solid #1e293b;
+        padding: 8px 6px;
+        font-size: 12px;
+    }
+
+    .bill-table th {
+        text-transform: uppercase;
+        font-size: 11px;
+        background: #f8fafc;
+        text-align: center;
+        letter-spacing: 0.03em;
+    }
+
+    .text-right {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .text-center {
+        text-align: center;
+    }
+
+    .summary-box {
+        width: min(360px, 100%);
+        margin-left: auto;
+        margin-top: 10px;
+        border-collapse: collapse;
+    }
+
+    .summary-box td {
+        border: 1px solid #1e293b;
+        padding: 8px 10px;
+        font-size: 13px;
+    }
+
+    .summary-box td:first-child {
+        font-weight: 700;
+        background: #f8fafc;
+    }
+
+    .summary-box .net td {
+        font-size: 15px;
+        font-weight: 800;
+        background: #ecfeff;
+    }
+
+    .note {
+        margin-top: 14px;
+        font-size: 12px;
+        color: #475569;
+    }
+
+    @media (max-width: 700px) {
+        .preview-shell {
+            padding: 0 12px;
+        }
+
+        .bill-wrapper {
+            padding: 8px;
+        }
+    }
+
+    @media print {
+        body {
+            background: #fff;
+        }
+
+        .preview-toolbar {
+            display: none !important;
+        }
+
+        .preview-shell {
+            max-width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        .bill-wrapper {
+            border: 1px solid #000;
+            box-shadow: none;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="preview-shell">
+    <div class="preview-toolbar">
+        <div>
+            <h1 style="margin: 0 0 4px;">Invoice Preview</h1>
+            <p class="muted" style="margin: 0;">Review bill before printing or download.</p>
+        </div>
+        <div class="actions">
+            <a class="button-link button-secondary" href="{% url 'billing:create' %}">Back</a>
+            <a class="button-link" href="{% url 'billing:invoice-pdf' invoice.id %}">Download PDF</a>
+            <button type="button" id="print-btn">Print</button>
+        </div>
+    </div>
+
+    <section id="invoice-print-area" class="bill-wrapper">
+        <header class="bill-header">
+            <p class="shop-line">{{ invoice.user.shop_name }}</p>
+            <p class="shop-meta">{{ invoice.user.address }}</p>
+            <p class="shop-meta">Phone: {{ invoice.user.mobile }}</p>
+            <p class="shop-meta">GSTIN: {{ invoice.user.gst_number|default:"N/A" }}</p>
+        </header>
+
+        <table class="invoice-meta">
+            <tr>
+                <td class="label">Invoice No</td>
+                <td>{{ invoice.invoice_number }}</td>
+                <td class="label">Date</td>
+                <td>{{ invoice.date }}</td>
+            </tr>
+            <tr>
+                <td class="label">Customer</td>
+                <td>{{ invoice.customer_name }}</td>
+                <td class="label">Mobile</td>
+                <td>{{ invoice.customer_mobile }}</td>
+            </tr>
+            <tr>
+                <td class="label">Payment Mode</td>
+                <td>{{ invoice.payment_mode }}</td>
+                <td class="label">Bill Type</td>
+                <td>Tax Invoice</td>
+            </tr>
+        </table>
+
+        <table class="bill-table">
+            <thead>
+                <tr>
+                    <th>HSN</th>
+                    <th>Item Name</th>
+                    <th>Pack</th>
+                    <th>Qty</th>
+                    <th>Rate</th>
+                    <th>Discount</th>
+                    <th>GST%</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in invoice.items.all %}
+                    <tr>
+                        <td class="text-center">{{ item.product.hsn_code }}</td>
+                        <td>{{ item.product.name }}</td>
+                        <td class="text-center">{{ item.product.unit }}</td>
+                        <td class="text-right">{{ item.quantity }}</td>
+                        <td class="text-right">{{ item.rate }}</td>
+                        <td class="text-right">{{ item.discount }}</td>
+                        <td class="text-right">{{ item.gst }}</td>
+                        <td class="text-right">{{ item.amount }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center">No invoice items found.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <table class="summary-box">
+            <tr>
+                <td>Subtotal</td>
+                <td class="text-right">{{ invoice.total_amount }}</td>
+            </tr>
+            <tr>
+                <td>CGST</td>
+                <td class="text-right">{{ invoice.cgst_amount }}</td>
+            </tr>
+            <tr>
+                <td>SGST</td>
+                <td class="text-right">{{ invoice.sgst_amount }}</td>
+            </tr>
+            <tr class="net">
+                <td>Net Amount</td>
+                <td class="text-right">{{ invoice.final_amount }}</td>
+            </tr>
+        </table>
+
+        <p class="note">This is a system generated invoice.</p>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const printButton = document.getElementById("print-btn");
+
+    printButton.addEventListener("click", () => {
+        window.print();
+    });
+</script>
+{% endblock %}

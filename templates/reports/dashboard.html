@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+
+{% block title %}Reports Dashboard | Billing Software{% endblock %}
+
+{% block extra_css %}
+<style>
+    .reports-shell {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 30px 24px 48px;
+    }
+
+    .reports-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(220px, 1fr));
+        gap: 14px;
+        margin-bottom: 16px;
+    }
+
+    .metric-card {
+        background: #ffffff;
+        border: 1px solid #dbe7ef;
+        border-radius: 14px;
+        padding: 18px;
+        box-shadow: 0 12px 34px rgba(15, 118, 110, 0.08);
+    }
+
+    .metric-card h3 {
+        margin: 0 0 8px;
+        font-size: 14px;
+        text-transform: uppercase;
+        color: #64748b;
+        letter-spacing: 0.03em;
+    }
+
+    .metric-card p {
+        margin: 0;
+        font-size: 32px;
+        font-weight: 700;
+        color: #0f172a;
+        line-height: 1.2;
+    }
+
+    .report-panel {
+        background: #ffffff;
+        border: 1px solid #dbe7ef;
+        border-radius: 14px;
+        padding: 18px;
+        margin-bottom: 16px;
+        box-shadow: 0 12px 34px rgba(14, 116, 144, 0.08);
+    }
+
+    .report-panel h2 {
+        margin: 0 0 14px;
+        font-size: 20px;
+    }
+
+    .chart-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .chart-card {
+        background: #f8fafc;
+        border: 1px solid #dbe7ef;
+        border-radius: 12px;
+        padding: 14px;
+    }
+
+    .chart-title {
+        margin: 0 0 10px;
+        font-size: 14px;
+        color: #475569;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+    }
+
+    .chart-wrap {
+        position: relative;
+        min-height: 280px;
+    }
+
+    .filter-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr auto auto;
+        gap: 10px;
+        align-items: end;
+    }
+
+    .top-products-list {
+        margin: 14px 0 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 8px;
+    }
+
+    .top-products-list li {
+        display: flex;
+        justify-content: space-between;
+        border: 1px solid #dbe7ef;
+        background: #ffffff;
+        border-radius: 10px;
+        padding: 9px 12px;
+        font-size: 14px;
+    }
+
+    .qty-pill {
+        font-variant-numeric: tabular-nums;
+        font-weight: 700;
+        color: #0f766e;
+    }
+
+    @media (max-width: 980px) {
+        .reports-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .chart-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .filter-row {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="reports-shell">
+    <div class="top-nav">
+        <div>
+            <h1 style="margin-bottom: 6px;">Reports Dashboard</h1>
+            <p class="muted" style="margin: 0;">Sales analytics and product performance for {{ request.user.shop_name }}</p>
+        </div>
+        <div class="actions">
+            <a class="button-link button-secondary" href="{% url 'accounts:dashboard' %}">Dashboard</a>
+            <a class="button-link" href="{% url 'billing:create' %}">Create Invoice</a>
+        </div>
+    </div>
+
+    <section class="report-panel">
+        <h2>Date-wise Filter</h2>
+        <form method="get" class="filter-row">
+            <div>
+                <label for="start_date">Start Date</label>
+                <input id="start_date" name="start_date" type="date" value="{{ start_date }}">
+            </div>
+            <div>
+                <label for="end_date">End Date</label>
+                <input id="end_date" name="end_date" type="date" value="{{ end_date }}">
+            </div>
+            <button type="submit">Apply Filter</button>
+            <a class="button-link button-secondary" href="{% url 'reports:dashboard' %}">Reset</a>
+        </form>
+    </section>
+
+    <section class="reports-grid">
+        <article class="metric-card">
+            <h3>Daily Sales ({{ end_date }})</h3>
+            <p>&#8377; {{ daily_sales_amount }}</p>
+        </article>
+        <article class="metric-card">
+            <h3>Monthly Sales ({{ end_date_obj|date:"M Y" }})</h3>
+            <p>&#8377; {{ monthly_sales_amount }}</p>
+        </article>
+        <article class="metric-card">
+            <h3>Total Revenue (Range)</h3>
+            <p>&#8377; {{ total_revenue }}</p>
+        </article>
+    </section>
+
+    <section class="chart-grid">
+        <article class="chart-card">
+            <h3 class="chart-title">Daily Sales Trend</h3>
+            <div class="chart-wrap">
+                <canvas id="dailySalesChart"></canvas>
+            </div>
+        </article>
+
+        <article class="chart-card">
+            <h3 class="chart-title">Monthly Sales Trend</h3>
+            <div class="chart-wrap">
+                <canvas id="monthlySalesChart"></canvas>
+            </div>
+        </article>
+    </section>
+
+    <section class="chart-grid">
+        <article class="chart-card">
+            <h3 class="chart-title">Top Selling Products (Quantity)</h3>
+            <div class="chart-wrap">
+                <canvas id="topProductsChart"></canvas>
+            </div>
+        </article>
+
+        <article class="chart-card">
+            <h3 class="chart-title">Top Products List</h3>
+            {% if top_products %}
+                <ul class="top-products-list">
+                    {% for product in top_products %}
+                        <li>
+                            <span>{{ product.product__name }}</span>
+                            <span class="qty-pill">{{ product.total_quantity }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="muted">No sales data found in selected range.</p>
+            {% endif %}
+        </article>
+    </section>
+</div>
+
+{{ daily_labels|json_script:"daily-labels" }}
+{{ daily_values|json_script:"daily-values" }}
+{{ monthly_labels|json_script:"monthly-labels" }}
+{{ monthly_values|json_script:"monthly-values" }}
+{{ top_product_labels|json_script:"top-product-labels" }}
+{{ top_product_values|json_script:"top-product-values" }}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const dailyLabels = JSON.parse(document.getElementById("daily-labels").textContent);
+    const dailyValues = JSON.parse(document.getElementById("daily-values").textContent);
+    const monthlyLabels = JSON.parse(document.getElementById("monthly-labels").textContent);
+    const monthlyValues = JSON.parse(document.getElementById("monthly-values").textContent);
+    const topProductLabels = JSON.parse(document.getElementById("top-product-labels").textContent);
+    const topProductValues = JSON.parse(document.getElementById("top-product-values").textContent);
+
+    const currencyTick = (value) => `Rs ${Number(value).toFixed(0)}`;
+
+    new Chart(document.getElementById("dailySalesChart"), {
+        type: "line",
+        data: {
+            labels: dailyLabels,
+            datasets: [
+                {
+                    label: "Daily Sales",
+                    data: dailyValues,
+                    borderColor: "#0f766e",
+                    backgroundColor: "rgba(15, 118, 110, 0.15)",
+                    borderWidth: 2,
+                    tension: 0.32,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    ticks: {
+                        callback: currencyTick
+                    }
+                }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+
+    new Chart(document.getElementById("monthlySalesChart"), {
+        type: "bar",
+        data: {
+            labels: monthlyLabels,
+            datasets: [
+                {
+                    label: "Monthly Sales",
+                    data: monthlyValues,
+                    backgroundColor: "rgba(37, 99, 235, 0.75)",
+                    borderColor: "#1d4ed8",
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    ticks: {
+                        callback: currencyTick
+                    }
+                }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+
+    new Chart(document.getElementById("topProductsChart"), {
+        type: "doughnut",
+        data: {
+            labels: topProductLabels,
+            datasets: [
+                {
+                    label: "Top Selling Products",
+                    data: topProductValues,
+                    backgroundColor: [
+                        "#0f766e",
+                        "#1d4ed8",
+                        "#ea580c",
+                        "#4f46e5",
+                        "#059669",
+                        "#b45309",
+                        "#be123c",
+                        "#047857",
+                        "#9333ea",
+                        "#475569"
+                    ]
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: "bottom"
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

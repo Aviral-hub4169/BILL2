@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Register | Billing Software{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="card">
+        <div class="card-panel hero">
+            <h1>Multi-User Billing Software</h1>
+            <p>Create your business account to manage billing, customers, and operations from a single dashboard.</p>
+            <p>Already have an account? <a href="{% url 'accounts:login' %}" style="color: #ccfbf1;">Login here</a>.</p>
+            <p class="muted" style="color: #ccfbf1;">API endpoint: <code>/api/register/</code></p>
+        </div>
+        <div class="card-panel">
+            <h2>Create Account</h2>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.GET.next }}">
+                {% for field in form %}
+                    <div>
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {{ field.errors }}
+                    </div>
+                {% endfor %}
+                <button type="submit">Register</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Login | Billing Software{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="card">
+        <div class="card-panel hero">
+            <h1>Welcome Back</h1>
+            <p>Login with your business email to access the billing dashboard.</p>
+            <p>New here? <a href="{% url 'accounts:register' %}" style="color: #ccfbf1;">Create an account</a>.</p>
+        </div>
+        <div class="card-panel">
+            <h2>Login</h2>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.GET.next }}">
+                {% if form.non_field_errors %}
+                    {{ form.non_field_errors }}
+                {% endif %}
+                {% for field in form %}
+                    <div>
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {{ field.errors }}
+                    </div>
+                {% endfor %}
+                <button type="submit">Login</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

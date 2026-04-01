@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}{% if object %}Edit Product{% else %}Add Product{% endif %} | Billing Software{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="card">
+        <div class="card-panel hero">
+            <h1>{% if object %}Edit Product{% else %}Add Product{% endif %}</h1>
+            <p>Maintain your product catalog with pricing, GST, stock quantity, and unit information.</p>
+            <p><a href="{% url 'products:list' %}" style="color: #ccfbf1;">Back to product list</a></p>
+        </div>
+        <div class="card-panel">
+            <h2>{% if object %}Update Details{% else %}New Product Details{% endif %}</h2>
+            <form method="post">
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                    {{ form.non_field_errors }}
+                {% endif %}
+                {% for field in form %}
+                    <div>
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {{ field.errors }}
+                    </div>
+                {% endfor %}
+                <div class="actions">
+                    <button type="submit">{% if object %}Update Product{% else %}Save Product{% endif %}</button>
+                    <a class="button-link button-secondary" href="{% url 'products:list' %}">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

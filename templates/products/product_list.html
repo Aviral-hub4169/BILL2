@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Products | Billing Software{% endblock %}
+
+{% block content %}
+<div style="max-width: 1180px; margin: 0 auto; padding: 32px 24px 48px;">
+    <div class="top-nav">
+        <div>
+            <h1 style="margin-bottom: 6px;">Products</h1>
+            <p class="muted" style="margin: 0;">Manage products for {{ request.user.shop_name }}</p>
+        </div>
+        <div class="actions">
+            <a class="button-link button-secondary" href="{% url 'accounts:dashboard' %}">Dashboard</a>
+            <a class="button-link" href="{% url 'products:add' %}">Add Product</a>
+        </div>
+    </div>
+
+    <div class="dashboard-card">
+        <form method="get" class="inline-form">
+            <input type="text" name="q" value="{{ search_query }}" placeholder="Search by product name or HSN code">
+            <button type="submit">Search</button>
+            {% if search_query %}
+                <a class="button-link button-secondary" href="{% url 'products:list' %}">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+
+    {% if products %}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>HSN Code</th>
+                        <th>Price</th>
+                        <th>GST %</th>
+                        <th>Quantity</th>
+                        <th>Unit</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                        <tr>
+                            <td>{{ product.name }}</td>
+                            <td>{{ product.hsn_code }}</td>
+                            <td>{{ product.price }}</td>
+                            <td>{{ product.gst_percentage }}</td>
+                            <td>{{ product.quantity }}</td>
+                            <td>{{ product.unit }}</td>
+                            <td>
+                                <div class="actions">
+                                    <a class="button-link button-secondary" href="{% url 'products:edit' product.pk %}">Edit</a>
+                                    <a class="button-link button-danger" href="{% url 'products:delete' product.pk %}">Delete</a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <p style="margin-top: 0;">No products found.</p>
+            <p>{% if search_query %}Try a different search keyword.{% else %}Start by adding your first product.{% endif %}</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
