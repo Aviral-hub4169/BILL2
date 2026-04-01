@@ -64,7 +64,7 @@ WSGI_APPLICATION = 'billing_project.wsgi.application'
 import dj_database_url
 
 DATABASES = {
-    'default': dj_database_url.parse('your_database_url_here')
+    'default': dj_database_url.parse('dpg-d76g106dqaus73c3j6fg-a')
 }
 
 
